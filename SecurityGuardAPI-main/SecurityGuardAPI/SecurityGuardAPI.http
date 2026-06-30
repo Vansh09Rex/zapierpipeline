@@ -1,0 +1,6 @@
+@SecurityGuardAPI_HostAddress = http://localhost:5099
+
+GET {{SecurityGuardAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
