@@ -1,0 +1,17 @@
+{
+  "name": "shopify-order-pipeline-zapier-app",
+  "version": "1.0.0",
+  "description": "Zapier CLI custom app for forwarding Shopify order payloads to an ASP.NET Core backend.",
+  "main": "index.js",
+  "scripts": {
+    "validate": "zapier-platform validate",
+    "test": "node -e \"require('./index'); console.log('Zapier app loaded')\""
+  },
+  "dependencies": {
+    "zapier-platform-core": "19.0.0"
+  },
+  "devDependencies": {
+    "zapier-platform-cli": "19.0.0"
+  },
+  "private": true
+}

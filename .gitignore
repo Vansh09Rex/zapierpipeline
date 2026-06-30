@@ -1,0 +1,21 @@
+# Node / Zapier
+node_modules/
+npm-debug.log*
+
+# .NET
+bin/
+obj/
+
+# Local editor/system files
+.vs/
+.vscode/
+*.user
+*.suo
+*.tmp
+Thumbs.db
+Desktop.ini
+
+# Secrets / local overrides
+appsettings.Local.json
+.env
+.env.*
