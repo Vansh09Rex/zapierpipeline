@@ -38,6 +38,20 @@ var app = builder.Build();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "Shopify Zapier ASP.NET Zoho Pipeline",
+    status = "ready",
+    orderEndpoint = "/api/orders",
+    authEndpoint = "/api/auth/token"
+})).AllowAnonymous();
+
+app.MapGet("/health", () => Results.Ok(new
+{
+    status = "healthy"
+})).AllowAnonymous();
+
 app.MapControllers();
 
 app.Run();
