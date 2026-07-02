@@ -108,8 +108,24 @@ $token = $authResponse.accessToken
 Invoke-RestMethod -Method Post -Uri http://localhost:5080/api/orders -ContentType 'application/json' -Headers @{ Authorization = "Bearer $token" } -Body '{"OrderId":"ZAP-888","CustomerEmail":"demo@test.com","TotalAmount":99.99}'
 ```
 
-### 5. Inspect Databases
-View structured order history saved inside PostgreSQL:
+### 5. Demo Querying Saved Orders (Merged Feature)
+You can fetch all processed orders or inspect a single order via the API (requires JWT Bearer authorization):
+```powershell
+# Get all orders saved in PostgreSQL
+Invoke-RestMethod -Method Get -Uri http://localhost:5080/api/orders -Headers @{ Authorization = "Bearer $token" } | ConvertTo-Json -Depth 5
+
+# Get specific order details by PostgreSQL GUID
+Invoke-RestMethod -Method Get -Uri http://localhost:5080/api/orders/<postgres-guid-id> -Headers @{ Authorization = "Bearer $token" } | ConvertTo-Json
+```
+
+### 6. Run the Single-Command E2E Test Suite (New)
+You can test the entire pipeline (server start, webhook simulation, authentication, database persistence, database query, and teardown) with one command in your PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run_e2e_tests.ps1
+```
+
+### 7. Inspect Databases
+View structured order history saved inside PostgreSQL directly:
 ```powershell
 docker exec pipeline_postgres psql -U postgres -d zapier_pipeline -c "SELECT * FROM orders;"
 ```
