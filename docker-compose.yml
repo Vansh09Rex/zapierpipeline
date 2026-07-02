@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pipeline_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: zapier_pipeline
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongodb:
+    image: mongo:7.0
+    container_name: pipeline_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./central-backend
+      dockerfile: Dockerfile
+    container_name: pipeline_backend
+    restart: always
+    ports:
+      - "5080:5080"
+    environment:
+      - ConnectionStrings__PostgresConnection=Host=postgres;Database=zapier_pipeline;Username=postgres;Password=postgres_password
+      - ConnectionStrings__MongoConnection=mongodb://mongodb:27017
+      - PipelineSecurity__JwtSigningKey=replace-this-with-at-least-32-characters-long
+      - PipelineSecurity__Issuer=CentralBackend
+      - PipelineSecurity__Audience=ZapierPipeline
+      - Shopify__WebhookSecret=shopify-local-secret
+      - ZohoCrm__UseMock=true
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  mongo_data:
