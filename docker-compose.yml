@@ -49,6 +49,7 @@ services:
       - PipelineSecurity__Audience=ZapierPipeline
       - Shopify__WebhookSecret=shopify-local-secret
       - ZohoCrm__UseMock=true
+      - Database__UseMockDatabase=false
     depends_on:
       postgres:
         condition: service_healthy
