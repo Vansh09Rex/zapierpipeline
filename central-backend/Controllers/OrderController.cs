@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using CentralBackend.Data;
 using CentralBackend.Models;
 using CentralBackend.Services;
+using CentralBackend.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -20,18 +21,18 @@ namespace CentralBackend.Controllers
     [Route("api/orders")]
     public class OrderController : ControllerBase
     {
-        private readonly AppDbContext _dbContext;
+        private readonly IOrderRepository _repository;
         private readonly MongoLogService _mongoLog;
         private readonly ZohoCrmService _zohoService;
         private readonly ILogger<OrderController> _logger;
 
         public OrderController(
-            AppDbContext dbContext,
+            IOrderRepository repository,
             MongoLogService mongoLog,
             ZohoCrmService zohoService,
             ILogger<OrderController> logger)
         {
-            _dbContext = dbContext;
+            _repository = repository;
             _mongoLog = mongoLog;
             _zohoService = zohoService;
             _logger = logger;
@@ -82,7 +83,7 @@ namespace CentralBackend.Controllers
             }
 
             // Check if order already exists in PostgreSQL
-            var existingOrder = await _dbContext.Orders.FirstOrDefaultAsync(o => o.OrderId == payload.OrderId);
+            var existingOrder = await _repository.GetOrderByStringIdAsync(payload.OrderId);
             if (existingOrder != null)
             {
                 _logger.LogInformation("Zapier order {OrderId} already processed. Skipping duplicates.", payload.OrderId);
@@ -99,8 +100,7 @@ namespace CentralBackend.Controllers
                 SyncStatus = "Pending"
             };
 
-            _dbContext.Orders.Add(newOrder);
-            await _dbContext.SaveChangesAsync();
+            await _repository.CreateOrderAsync(newOrder);
 
             // Outbound synchronization to Zoho CRM
             var (zohoSuccess, zohoRecordId, zohoMessage) = await _zohoService.SyncOrderToZohoAsync(
@@ -112,7 +112,7 @@ namespace CentralBackend.Controllers
             // Update PostgreSQL order with sync status
             newOrder.SyncStatus = zohoSuccess ? "Synced" : "Failed";
             newOrder.ZohoRecordId = zohoRecordId;
-            await _dbContext.SaveChangesAsync();
+            await _repository.UpdateOrderAsync(newOrder);
 
             return Ok(new
             {
@@ -123,6 +123,30 @@ namespace CentralBackend.Controllers
                 zohoRecordId = newOrder.ZohoRecordId,
                 message = zohoMessage
             });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetOrders()
+        {
+            _logger.LogInformation("Retrieving all orders from database.");
+            var orders = await _repository.GetAllOrdersAsync();
+            return Ok(orders);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetOrder(Guid id)
+        {
+            _logger.LogInformation("Retrieving order with ID: {Id}", id);
+            var order = await _repository.GetOrderByIdAsync(id);
+            if (order == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Order not found."
+                });
+            }
+            return Ok(order);
         }
     }
 }

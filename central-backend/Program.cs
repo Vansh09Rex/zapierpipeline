@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using CentralBackend.Services;
 using CentralBackend.Data;
+using CentralBackend.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
@@ -64,6 +65,9 @@ builder.Services.AddSingleton<MongoLogService>();
 
 // Zoho CRM Service with HttpClient
 builder.Services.AddHttpClient<ZohoCrmService>();
+
+// Register Repositories
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 
 var app = builder.Build();
 
