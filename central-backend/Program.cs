@@ -46,9 +46,18 @@ builder.Services.AddEndpointsApiExplorer();
 // 3. Register Core Services
 builder.Services.AddSingleton<JwtTokenService>();
 
-// PostgreSQL Context Registration
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+// Database Registration
+var useMockDb = builder.Configuration.GetValue<bool>("Database:UseMockDatabase", false);
+if (useMockDb)
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseInMemoryDatabase("ZapierPipeline"));
+}
+else
+{
+    builder.Services.AddDbContext<AppDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("PostgresConnection")));
+}
 
 // MongoDB Logging Service Registration
 builder.Services.AddSingleton<MongoLogService>();
@@ -65,13 +74,19 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<AppDbContext>();
-        // EnsureCreated creates the schema in PostgreSQL if not already present
         dbContext.Database.EnsureCreated();
-        app.Logger.LogInformation("PostgreSQL Database schema verified/created successfully.");
+        if (builder.Configuration.GetValue<bool>("Database:UseMockDatabase", false))
+        {
+            app.Logger.LogInformation("In-Memory Database initialized successfully.");
+        }
+        else
+        {
+            app.Logger.LogInformation("PostgreSQL Database schema verified/created successfully.");
+        }
     }
     catch (Exception ex)
     {
-        app.Logger.LogError(ex, "Failed to run PostgreSQL schema verification.");
+        app.Logger.LogError(ex, "Failed to run Database schema verification.");
     }
 }
 
